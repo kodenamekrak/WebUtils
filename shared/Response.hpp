@@ -47,12 +47,12 @@ namespace WebUtils {
             /// @brief method that will be called on your response to set the data
             virtual bool AcceptData(std::span<uint8_t const> data) = 0;
 
-            /// @brief for some returned datatypes, it's worth it to check whether it parsed succesfully
-            virtual bool DataParsedSuccesful() const noexcept = 0;
+            /// @brief for some returned datatypes, it's worth it to check whether it parsed successfully
+            virtual bool DataParsedSuccessful() const noexcept = 0;
 
             /// @brief check whether the http and curl status were valid
-            virtual bool IsSuccesful() const noexcept { return get_HttpCode() >= 200 && get_HttpCode() < 300 && get_CurlStatus() == 0; }
-            virtual operator bool() const noexcept { return IsSuccesful(); }
+            virtual bool IsSuccessful() const noexcept { return get_HttpCode() >= 200 && get_HttpCode() < 300 && get_CurlStatus() == 0; }
+            virtual operator bool() const noexcept { return IsSuccessful(); }
     };
 
     template<typename T>
@@ -78,7 +78,7 @@ namespace WebUtils {
         /// @throw should throw if response was not valid
         virtual T const& GetParsedData() const { return responseData.value(); };
 
-        virtual bool DataParsedSuccesful() const noexcept override { return responseData.has_value(); };
+        virtual bool DataParsedSuccessful() const noexcept override { return responseData.has_value(); };
     };
 
     /// @brief string response, simply reading the data as a string

@@ -33,7 +33,7 @@ namespace WebUtils {
                 file.seekg(0, std::ios::beg);
                 file.read((char*)data.data(), data.size());
                 response->AcceptData(data);
-                return response && response->DataParsedSuccesful();
+                return response->IsSuccessful() && response->DataParsedSuccessful();
             } else {
                 response->HttpCode = 404;
                 return false;
@@ -70,6 +70,6 @@ namespace WebUtils {
         response->HttpCode = httpCode;
 
         curl_easy_cleanup(curl);
-        return response && response->DataParsedSuccesful();
+        return response->IsSuccessful() && response->DataParsedSuccessful();
     }
 }

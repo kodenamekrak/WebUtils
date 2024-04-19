@@ -39,7 +39,7 @@ namespace WebUtils {
             int timeOut;
 
             /// @brief generic get for IResponse classes
-            /// @return whether there was data & it was parsed succesfully
+            /// @return whether there was data & it was parsed successfully
             template<response_impl T>
             requires(std::is_default_constructible_v<T>)
             std::future<T> GetAsync(URLOptions urlOptions) const {
@@ -69,11 +69,11 @@ namespace WebUtils {
             /// @brief gets data from a url synchronously
             /// @param urlOptions the url options to pass to curl
             /// @param targetResponse response to get into
-            /// @return data parsed succesfully
+            /// @return data parsed successfully
             bool GetInto(URLOptions urlOptions, IResponse* targetResponse) const;
 
             /// @brief generic get for IResponse classes
-            /// @return whether there was data & it was parsed succesfully
+            /// @return whether there was data & it was parsed successfully
             std::future<bool> GetAsyncInto(URLOptions urlOptions, IResponse* targetResponse) const {
                 return std::async(std::launch::any, &DownloaderUtility::GetInto, this, std::forward<URLOptions>(urlOptions), targetResponse);
             }
