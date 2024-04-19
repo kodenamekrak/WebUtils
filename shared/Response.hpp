@@ -136,7 +136,7 @@ namespace WebUtils {
             ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
             std::copy(data.begin(), data.end(), imageData.begin());
             bool mainThreadRan = false;
-            BSML::MainThreadScheduler([imageData, &mainThreadRan, this](){
+            BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
                 auto tex = LoadTextureRaw(imageData);
                 if (tex) this->responseData = tex;
                 mainThreadRan = true;
@@ -152,7 +152,7 @@ namespace WebUtils {
             ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
             std::copy(data.begin(), data.end(), imageData.begin());
             bool mainThreadRan = false;
-            BSML::MainThreadScheduler([imageData, &mainThreadRan, this](){
+            BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
                 auto tex = LoadTextureRaw(imageData);
                 if (tex) {
                     auto sprite = BSML::Utilities::LoadSpriteFromTexture(tex);
