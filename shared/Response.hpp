@@ -55,6 +55,9 @@ namespace WebUtils {
             virtual operator bool() const noexcept { return IsSuccesful(); }
     };
 
+    template<typename T>
+    concept response_impl = std::is_base_of_v<IResponse, T>;
+
     /// @brief generic response implementation to use as a base.
     template<typename T>
     struct WEBUTILS_EXPORT GenericResponse : public IResponse {

@@ -40,16 +40,16 @@ namespace WebUtils {
 
             /// @brief generic get for IResponse classes
             /// @return whether there was data & it was parsed succesfully
-            template<typename T>
-            requires(std::is_base_of_v<IResponse, T> && std::is_default_constructible_v<T>)
+            template<response_impl T>
+            requires(std::is_default_constructible_v<T>)
             std::future<T> GetAsync(URLOptions urlOptions) const {
                 return std::async(std::launch::any, &DownloaderUtility::Get<T>, this, std::forward<URLOptions>(urlOptions));
             }
 
             /// @brief generic async get for IResponse classes
             /// @param urlOptions the url options to pass to curl
-            template<typename T>
-            requires(std::is_base_of_v<IResponse, T> && std::is_default_constructible_v<T>)
+            template<response_impl T>
+            requires(std::is_default_constructible_v<T>)
             void GetAsync(URLOptions urlOptions, std::function<void(T)> onFinished) const {
                 if (!onFinished) return;
 
@@ -58,14 +58,13 @@ namespace WebUtils {
                 }, std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished)).detach();
             }
 
-            template<typename T>
-            requires(std::is_base_of_v<IResponse, T> && std::is_default_constructible_v<T>)
+            template<response_impl T>
+            requires(std::is_default_constructible_v<T>)
             T Get(URLOptions urlOptions) const {
                 T response{};
                 GetInto(std::forward<URLOptions>(urlOptions), &response);
                 return response;
             }
-
 
             /// @brief gets data from a url synchronously
             /// @param urlOptions the url options to pass to curl
