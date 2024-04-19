@@ -1,0 +1,169 @@
+#pragma once
+
+#include "_config.h"
+#include <ranges>
+#include <string>
+#include <optional>
+#include <vector>
+
+#if WEBUTILS_HAS_RAPIDJSON
+#include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
+#endif
+
+#if WEBUTILS_HAS_XML
+#include "tinyxml2/shared/tinyxml2.h"
+#endif
+
+#if WEBUTILS_HAS_BSML
+#include "UnityEngine/Sprite.hpp"
+#include "UnityEngine/Texture2D.hpp"
+// include can be either from bsml directly or from a lib using bsml
+#if __has_include("bsml/shared/BSML/Parsing/BSMLParser.hpp")
+#include "bsml/shared/BSML/Parsing/BSMLParser.hpp"
+#else
+#include "BSML/Parsing/BSMLParser.hpp"
+#endif
+
+#include "bsml/shared/BSML/Parsing/BSMLParser.hpp"
+#if __has_include("bsml/shared/BSML/MainThreadScheduler.hpp")
+#include "bsml/shared/BSML/MainThreadScheduler.hpp"
+#else
+#include "BSML/MainThreadScheduler.hpp"
+#endif
+#endif
+
+namespace WebUtils {
+    class WEBUTILS_EXPORT IResponse {
+        public:
+            virtual int get_HttpCode() const noexcept = 0;
+            virtual void set_HttpCode(int httpCode) noexcept = 0;
+            __declspec(property(get=get_HttpCode, put=set_HttpCode)) int HttpCode;
+
+            /// @brief getter for the curl status, 0 means success, anything else means error. This is equivalent to CURLE
+            virtual int get_CurlStatus() const noexcept = 0;
+            virtual void set_CurlStatus(int curlStatus) noexcept = 0;
+            __declspec(property(get=get_CurlStatus, put=set_CurlStatus)) int CurlStatus;
+
+            /// @brief method that will be called on your response to set the data
+            virtual bool AcceptData(std::span<uint8_t const> data) = 0;
+
+            /// @brief for some returned datatypes, it's worth it to check whether it parsed succesfully
+            virtual bool DataParsedSuccesful() const noexcept = 0;
+
+            /// @brief check whether the http and curl status were valid
+            virtual bool IsSuccesful() const noexcept { return get_HttpCode() >= 200 && get_HttpCode() < 300 && get_CurlStatus() == 0; }
+            virtual operator bool() const noexcept { return IsSuccesful(); }
+    };
+
+    /// @brief generic response implementation to use as a base.
+    template<typename T>
+    struct WEBUTILS_EXPORT GenericResponse : public IResponse {
+        int httpCode;
+        int curlStatus;
+        std::optional<T> responseData;
+
+        virtual int get_HttpCode() const noexcept override { return httpCode; }
+        virtual void set_HttpCode(int httpCode) noexcept override { this->httpCode = httpCode; }
+
+        virtual int get_CurlStatus() const noexcept override { return curlStatus; }
+        virtual void set_CurlStatus(int curlStatus) noexcept override { this->curlStatus = curlStatus; }
+
+        /// @brief operator to response item
+        virtual operator T const&() const { return GetParsedData(); }
+
+        /// @brief gets the response item, will throw if invalid
+        /// @throw should throw if response was not valid
+        virtual T const& GetParsedData() const { return responseData.value(); };
+
+        virtual bool DataParsedSuccesful() const noexcept override { return responseData.has_value(); };
+    };
+
+    /// @brief string response, simply reading the data as a string
+    struct WEBUTILS_EXPORT StringResponse : public GenericResponse<std::string> {
+        virtual bool AcceptData(std::span<uint8_t const> data) override {
+            responseData = std::string((char*)data.data(), data.size());
+            return true;
+        }
+    };
+
+    /// @brief string response, simply reading the data as raw data
+    struct WEBUTILS_EXPORT DataResponse : public GenericResponse<std::vector<uint8_t>> {
+        virtual bool AcceptData(std::span<uint8_t const> data) override {
+            std::vector<uint8_t> parsed(data.size());
+            std::copy(data.begin(), data.end(), parsed.begin());
+            responseData = std::move(parsed);
+            return true;
+        }
+    };
+
+#if WEBUTILS_HAS_RAPIDJSON
+    /// @brief string response, simply reading the data as a json string
+    struct WEBUTILS_EXPORT JsonResponse : public GenericResponse<rapidjson::Document> {
+        virtual bool AcceptData(std::span<uint8_t const> data) override {
+            std::string_view str((char*)data.data(), data.size());
+            rapidjson::Document doc;
+            doc.Parse(str);
+            if (doc.HasParseError()) return false;
+            responseData = std::move(doc);
+            return true;
+        }
+    };
+#endif
+
+#if WEBUTILS_HAS_XML
+    /// @brief string response, simply reading the data as an xml string
+    struct WEBUTILS_EXPORT XMLExport : public GenericResponse<tinyxml2::XMLDocument> {
+        virtual bool AcceptData(std::span<uint8_t const> data) override {
+            tinyxml2::XMLDocument doc;
+            auto parseResult = doc.Parse((char*)data.data(), data.size());
+            if (parseResult == tinyxml2::XML_SUCCESS) {
+                responseData = std::move(doc);
+                return true;
+            }
+            return false;
+        }
+    }
+#endif
+
+#if WEBUTILS_HAS_BSML
+    /// @brief string response, simply reading the data as a texture
+    struct WEBUTILS_EXPORT TextureResponse : public GenericResponse<UnityW<UnityEngine::Texture2D>> {
+        virtual bool AcceptData(std::span<uint8_t const> data) override {
+            ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
+            std::copy(data.begin(), data.end(), imageData.begin());
+            BSML::MainThreadScheduler([imageData, this](){
+                auto tex = LoadTextureRaw(imageData);
+                if (!tex) return;
+                this->responseData = tex;
+            });
+            return responseData.has_value();
+        }
+    };
+
+    /// @brief string response, simply reading the data as a texture into a sprite
+    struct WEBUTILS_EXPORT SpriteResponse : public GenericResponse<UnityW<UnityEngine::Sprite>> {
+        virtual bool AcceptData(std::span<uint8_t const> data) override {
+            ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
+            std::copy(data.begin(), data.end(), imageData.begin());
+            BSML::MainThreadScheduler([imageData, this](){
+                auto tex = LoadTextureRaw(imageData);
+                if (!tex) return;
+                auto sprite = BSML::Utilities::LoadSpriteFromTexture(tex);
+                if (!sprite) return;
+                this->responseData = sprite;
+            });
+            return responseData.has_value();
+        }
+    };
+
+    /// @brief string response, simply reading & parsing the data as a bsml doc
+    struct WEBUTILS_EXPORT BSMLResponse : public GenericResponse<std::shared_ptr<BSMLParser>> {
+        virtual bool AcceptData(std::span<uint8_t const> data) override {
+            // ensure null termination, if bsml was smarter about this we wouldn't have to do this
+            std::string str((char*)data.data(), data.size());
+            responseData = BSML::BSMLParser::parse(str);
+            return true;
+        }
+    }
+#endif
+}

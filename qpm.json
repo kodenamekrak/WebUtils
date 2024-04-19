@@ -1,0 +1,36 @@
+{
+  "version": "0.3.0",
+  "sharedDir": "shared",
+  "dependenciesDir": "extern",
+  "info": {
+    "name": "WebUtils",
+    "id": "web-utils",
+    "version": "0.1.0",
+    "url": "https://github.com/RedBrumbler/WebUtils",
+    "additionalData": {
+      "overrideSoName": "libweb-utils.so",
+      "cmake": false
+    }
+  },
+  "workspace": {
+    "scripts": {
+      "qmod": [
+        "pwsh ./scripts/build.ps1",
+        "qpm qmod build",
+        "pwsh ./scripts/createqmod.ps1"
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "id": "libcurl",
+      "versionRange": "^8.5.0",
+      "additionalData": {}
+    },
+    {
+      "id": "fmt",
+      "versionRange": "^10.0.0",
+      "additionalData": {}
+    }
+  ]
+}
