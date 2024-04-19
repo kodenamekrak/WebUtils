@@ -141,7 +141,7 @@ namespace WebUtils {
                 if (tex) this->responseData = tex;
                 mainThreadRan = true;
             });
-            while(!mainThreadRan) std::this_thread::sleep_for(std::chrono::miliseconds(50));
+            while(!mainThreadRan) std::this_thread::sleep_for(std::chrono::milliseconds(50));
             return responseData.has_value();
         }
     };
@@ -160,7 +160,7 @@ namespace WebUtils {
                 }
                 mainThreadRan = true;
             });
-            while(!mainThreadRan) std::this_thread::sleep_for(std::chrono::miliseconds(50));
+            while(!mainThreadRan) std::this_thread::sleep_for(std::chrono::milliseconds(50));
             return responseData.has_value();
         }
     };
