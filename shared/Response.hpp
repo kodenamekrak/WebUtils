@@ -56,7 +56,7 @@ namespace WebUtils {
     };
 
     template<typename T>
-    concept response_impl = std::is_base_of_v<IResponse, T>;
+    concept response_impl = std::is_base_of_v<IResponse, T> && !std::is_abstract_v<T>;
 
     /// @brief generic response implementation to use as a base.
     template<typename T>
