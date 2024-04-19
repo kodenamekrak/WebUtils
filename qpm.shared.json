@@ -26,12 +26,16 @@
       {
         "id": "libcurl",
         "versionRange": "^8.5.0",
-        "additionalData": {}
+        "additionalData": {
+          "private": true
+        }
       },
       {
         "id": "fmt",
         "versionRange": "^10.0.0",
-        "additionalData": {}
+        "additionalData": {
+          "private": true
+        }
       }
     ]
   },
