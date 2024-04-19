@@ -1,6 +1,8 @@
 # WebUtils
 A Quest library to simplify downloading various types of content through simple method calls, allowing sync and async method calls
 
+Currently only supports get requests, post requests should be possible though
+
 # Downloadable types
  - String as `std::string`
  - Data as `std::vector<uint8_t>`
