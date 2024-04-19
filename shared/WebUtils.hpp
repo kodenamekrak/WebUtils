@@ -24,8 +24,8 @@ namespace WebUtils {
     /// @param onFinished function to run when done, NOT RAN ON MAIN OR BOUND IL2CPP THREAD
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline void WEBUTILS_EXPORT GetAsync(URLOptions urlOptions, std::function<void(StringResponse)> onFinished) {
-        downloader.GetAsync<StringResponse>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(StringResponse)>>(onFinished));   \
+    inline void WEBUTILS_EXPORT GetAsync(URLOptions urlOptions, std::function<void(T)> onFinished) {
+        downloader.GetAsync<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished));   \
     }
 
     /// @brief runs a get request synchronously
@@ -34,8 +34,8 @@ namespace WebUtils {
     /// @return response
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline StringResponse WEBUTILS_EXPORT Get(URLOptions urlOptions) {
-        return downloader.Get<StringResponse>(std::forward<URLOptions>(urlOptions));
+    inline T WEBUTILS_EXPORT Get(URLOptions urlOptions) {
+        return downloader.Get<T>(std::forward<URLOptions>(urlOptions));
     }
 
     namespace String {
