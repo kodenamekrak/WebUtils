@@ -5,6 +5,7 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <thread>
 
 #if WEBUTILS_HAS_RAPIDJSON
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
@@ -134,11 +135,13 @@ namespace WebUtils {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
             ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
             std::copy(data.begin(), data.end(), imageData.begin());
-            BSML::MainThreadScheduler([imageData, this](){
+            bool mainThreadRan = false;
+            BSML::MainThreadScheduler([imageData, &mainThreadRan, this](){
                 auto tex = LoadTextureRaw(imageData);
-                if (!tex) return;
-                this->responseData = tex;
+                if (tex) this->responseData = tex;
+                mainThreadRan = true;
             });
+            while(!mainThreadRan) std::this_thread::sleep_for(std::chrono::miliseconds(50));
             return responseData.has_value();
         }
     };
@@ -148,13 +151,16 @@ namespace WebUtils {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
             ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
             std::copy(data.begin(), data.end(), imageData.begin());
-            BSML::MainThreadScheduler([imageData, this](){
+            bool mainThreadRan = false;
+            BSML::MainThreadScheduler([imageData, &mainThreadRan, this](){
                 auto tex = LoadTextureRaw(imageData);
-                if (!tex) return;
-                auto sprite = BSML::Utilities::LoadSpriteFromTexture(tex);
-                if (!sprite) return;
-                this->responseData = sprite;
+                if (tex) {
+                    auto sprite = BSML::Utilities::LoadSpriteFromTexture(tex);
+                    if (sprite) this->responseData = sprite;
+                }
+                mainThreadRan = true;
             });
+            while(!mainThreadRan) std::this_thread::sleep_for(std::chrono::miliseconds(50));
             return responseData.has_value();
         }
     };

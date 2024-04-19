@@ -3,6 +3,7 @@
 #include "_config.h"
 #include "Response.hpp"
 #include <future>
+#include <thread>
 #include <iterator>
 #include <type_traits>
 

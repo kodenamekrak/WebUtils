@@ -14,7 +14,7 @@ namespace WebUtils {
         return fmt::format("{}?{}", url, fmt::join(formattedQueries, "&"));
     }
 
-    static auto write_vec_cb(uint8_t* content, std::size_t size, std::size_t nmemb, std::vector<uint8_t>* vec) -> std::size_t {
+    static std::size_t write_vec_cb(uint8_t* content, std::size_t size, std::size_t nmemb, std::vector<uint8_t>* vec) {
         std::span<uint8_t> addedData(content, (size * nmemb));
         vec->insert(std::next(vec->begin(), vec->size()), addedData.begin(), addedData.end());
         return addedData.size();
