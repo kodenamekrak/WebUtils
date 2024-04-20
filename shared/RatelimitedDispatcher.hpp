@@ -1,0 +1,119 @@
+#pragma once
+
+#include "DownloaderUtility.hpp"
+#include "Response.hpp"
+#include <atomic>
+#include <shared_mutex>
+#include <chrono>
+#include <queue>
+
+namespace WebUtils {
+    class IRequest {
+        public:
+            virtual ~IRequest() {};
+
+            virtual URLOptions const& get_URL() const = 0;
+            virtual IResponse* get_TargetResponse() = 0;
+            virtual IResponse* get_TargetResponse() const = 0;
+
+            __declspec(property(get=get_TargetResponse)) IResponse* TargetResponse;
+            __declspec(property(get=get_URL)) URLOptions const& URL;
+    };
+
+    template<response_impl T>
+    struct GenericRequest : public IRequest {
+        URLOptions url;
+        T targetResponse;
+
+        virtual URLOptions const& get_URL() const override { return url; }
+        virtual IResponse* get_TargetResponse() override { return &targetResponse; };
+        virtual IResponse* get_TargetResponse() const override { return &targetResponse; };
+    };
+
+    /// @brief struct to make sending multiple requests easier when dealing with rate limits
+    /// simply set your values, and
+    struct RatelimitedDispatcher {
+        public:
+            DownloaderUtility downloader;
+
+            std::size_t maxConcurrentRequests;
+            std::size_t maxRequestsPerTime;
+            std::chrono::milliseconds timeForRequests;
+
+            /// @brief struct used for when a response is complete and it may need to be retried
+            struct RetryOptions {
+                /// @brief time to wait before reattempting
+                std::chrono::milliseconds waitTime;
+            };
+
+            /// @brief method invoked when a request has finished
+            /// @param success whether the request was succesful (no http/curl errors, deserialize of response worked)
+            /// @param req unique pointer to request, non owning pointer
+            /// @return optional retry options. if set retries the request
+            std::function<std::optional<RetryOptions>(bool success, IRequest* response)> onRequestFinished;
+
+            /// @brief method invoked when all requests have been finished, including ones added while requests were going
+            /// @brief readonly span of the performed requests
+            std::function<void(std::span<std::unique_ptr<IRequest> const> requests)> allFinished;
+
+            /// @brief gets whether there are any requests to dispatch
+            bool AnyRequestsToDispatch();
+            /// @brief gets the size of the request queue
+            std::size_t RequestCountToDispatch();
+
+            /// @brief adds a request onto the queue
+            void AddRequest(std::unique_ptr<IRequest> req);
+
+            /// @brief gets the next request from the queue
+            /// @throw throws on invalid pop
+            std::unique_ptr<IRequest> PopRequest();
+
+            /// @brief adds a request onto the queue
+            template<response_impl T>
+            void AddRequest(URLOptions urlOptions) {
+                AddRequest(std::make_unique<GenericRequest<T>>(urlOptions));
+            }
+
+            /// @brief adds all url options as T requests onto the queue
+            /// @tparam response type to parse into
+            /// @param options span of url options to use
+            template<response_impl T>
+            void AddRequests(std::span<URLOptions const> options) {
+                for (auto& url : options) {
+                    AddRequest(std::make_unique<GenericRequest<T>>(url));
+                }
+            }
+
+            /// @brief starts the dispatch of the type when required
+            void StartDispatchIfNeeded();
+        protected:
+            /// @brief method called when a request has finished
+            /// @param success whether the request was succesful (no http/curl errors, deserialize of response worked)
+            /// @param req unique pointer to request, non owning pointer
+            /// @return optional retry options. if set retries the request
+            virtual std::optional<RetryOptions> RequestFinished(bool success, IRequest* req) const;
+
+            /// @brief method called when all requests have finished (queue empty)
+            virtual void AllFinished();
+        private:
+            /// @brief mutex used to guard accesses to the requests queue
+            std::shared_mutex _requestsMutex;
+            /// @brief queue used to store the requests to be done
+            std::queue<std::unique_ptr<IRequest>> _requestsToDispatch;
+            /// @brief mutex used to guard accesses to the finished requests vector
+            std::shared_mutex _finishedMutex;
+            /// @brief vector used to store finished requests
+            std::vector<std::unique_ptr<IRequest>> _finishedRequests;
+
+            /// @brief the currently executing dispatch
+            std::future<void> _currentRateLimitDispatch;
+            /// @brief the currently executing dispatch
+            std::atomic_int _currentlyRunningRequests;
+
+            /// @brief dispatcher thread
+            void DispatcherThread();
+
+            /// @brief dispatcher worker
+            void DispatchWorker();
+    };
+}
