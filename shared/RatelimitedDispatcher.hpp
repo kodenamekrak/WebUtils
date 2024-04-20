@@ -1,5 +1,6 @@
 #pragma once
 
+#include "_config.h"
 #include "DownloaderUtility.hpp"
 #include "Response.hpp"
 #include <atomic>
@@ -31,14 +32,15 @@ namespace WebUtils {
     };
 
     /// @brief struct to make sending multiple requests easier when dealing with rate limits
-    /// simply set your values, and
+    /// simply set your limits, set the values for the downloader, and run the requests
     struct RatelimitedDispatcher {
         public:
-            DownloaderUtility downloader;
+            virtual ~RatelimitedDispatcher() = default;
 
-            std::size_t maxConcurrentRequests;
-            std::size_t maxRequestsPerTime;
-            std::chrono::milliseconds timeForRequests;
+            DownloaderUtility downloader{.userAgent = WEBUTILS_USER_AGENT, .timeOut = WEBUTILS_TIMEOUT};
+
+            std::size_t maxConcurrentRequests = 1;
+            std::chrono::milliseconds rateLimitTime = std::chrono::milliseconds(0);
 
             /// @brief struct used for when a response is complete and it may need to be retried
             struct RetryOptions {
@@ -85,7 +87,8 @@ namespace WebUtils {
             }
 
             /// @brief starts the dispatch of the type when required
-            void StartDispatchIfNeeded();
+            /// @return currently executing future so you can await its completion
+            std::shared_future<void> StartDispatchIfNeeded();
         protected:
             /// @brief method called when a request has finished
             /// @param success whether the request was succesful (no http/curl errors, deserialize of response worked)
@@ -106,7 +109,7 @@ namespace WebUtils {
             std::vector<std::unique_ptr<IRequest>> _finishedRequests;
 
             /// @brief the currently executing dispatch
-            std::future<void> _currentRateLimitDispatch;
+            std::shared_future<void> _currentRateLimitDispatch;
             /// @brief the currently executing dispatch
             std::atomic_int _currentlyRunningRequests;
 

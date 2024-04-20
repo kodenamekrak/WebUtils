@@ -23,11 +23,12 @@ namespace WebUtils {
         return std::move(req);
     }
 
-    void RatelimitedDispatcher::StartDispatchIfNeeded() {
+    std::shared_future<void> RatelimitedDispatcher::StartDispatchIfNeeded() {
         // if not valid, or it was completed, start a new future (thread)
         if (!_currentRateLimitDispatch.valid() || _currentRateLimitDispatch.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
             _currentRateLimitDispatch = std::async(std::launch::async, &RatelimitedDispatcher::DispatcherThread, this);
         }
+        return _currentRateLimitDispatch;
     }
 
     std::optional<RatelimitedDispatcher::RetryOptions> RatelimitedDispatcher::RequestFinished(bool success, IRequest* req) const {
@@ -46,15 +47,15 @@ namespace WebUtils {
 
     void RatelimitedDispatcher::DispatcherThread() {
         while (AnyRequestsToDispatch()) {
-            std::vector<std::future<void>> dispatchers;
-            int dispatcherCount = std::min({maxConcurrentRequests, maxRequestsPerTime, WEBUTILS_MAX_CONCURRENCY, RequestCountToDispatch()});
-            for (auto i = 0; i < dispatcherCount; i++) {
-                dispatchers.emplace_back(
+            std::vector<std::future<void>> workers;
+            int workerCount = std::min<std::size_t>(RequestCountToDispatch(), std::max<std::size_t>(1, std::min(maxConcurrentRequests, WEBUTILS_MAX_CONCURRENCY)));
+            for (auto i = 0; i < workerCount; i++) {
+                workers.emplace_back(
                     std::async(std::launch::async, &RatelimitedDispatcher::DispatchWorker, this)
                 );
             }
 
-            for (auto& d : dispatchers) {
+            for (auto& d : workers) {
                 d.wait();
             }
         }
