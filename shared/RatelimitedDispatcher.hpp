@@ -10,7 +10,7 @@
 namespace WebUtils {
     class IRequest {
         public:
-            virtual ~IRequest() {};
+            virtual ~IRequest() = default;
 
             virtual URLOptions const& get_URL() const = 0;
             virtual IResponse* get_TargetResponse() = 0;
