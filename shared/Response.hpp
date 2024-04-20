@@ -36,7 +36,7 @@
 namespace WebUtils {
     class WEBUTILS_EXPORT IResponse {
         public:
-            virtual ~IResponse() {}
+            virtual ~IResponse() = default;
 
             virtual int get_HttpCode() const noexcept = 0;
             virtual void set_HttpCode(int httpCode) noexcept = 0;
