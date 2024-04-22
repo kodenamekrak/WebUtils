@@ -54,16 +54,16 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
 
-        std::vector<uint8_t> data;
+        std::vector<uint8_t> recvData;
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_vec_cb);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &recvData);
 
         std::string userAgent = urlOptions.userAgent.value_or(userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
 
         response->CurlStatus = curl_easy_perform(curl);
-        if (response->CurlStatus == CURLE_OK) response->AcceptData(data);
+        if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
 
         int httpCode = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
@@ -71,5 +71,77 @@ namespace WebUtils {
 
         curl_easy_cleanup(curl);
         return response->IsSuccessful() && response->DataParsedSuccessful();
+    }
+
+    bool DownloaderUtility::PostInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* response) const {
+        // if the url is for a filepath, write it to disk instead
+        if (urlOptions.isFileURL()) {
+            std::filesystem::path filePath(urlOptions.url.substr(7));
+            if (response) response->CurlStatus = 0;
+
+            if (filePath.has_filename()) {
+                // if it exists, delete
+                if (std::filesystem::exists(filePath)) {
+                    std::filesystem::remove(filePath);
+                }
+
+                // write out
+                std::ofstream file(filePath, std::ios::binary | std::ios::out);
+                file.write((char*)data.data(), data.size());
+
+                // response will just get 0 length return
+                if (response) {
+                    response->AcceptData(std::span<uint8_t, 0>());
+                    return response->IsSuccessful() && response->DataParsedSuccessful();
+                } else {
+                    return true;
+                }
+            } else {
+                if (response) response->HttpCode = 404;
+                return false;
+            }
+        }
+
+        auto curl = curl_easy_init();
+        struct curl_slist* curl_headers = nullptr;
+        for (const auto& [key, value] : urlOptions.headers) {
+            curl_headers = curl_slist_append(curl_headers, fmt::format("{}: {}", key, value).c_str());
+        }
+
+        auto url = urlOptions.fullURl();
+        std::string escapedUrl = curl_easy_escape(curl, url.c_str(), url.size());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
+        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (char*)data.data());
+
+        std::vector<uint8_t> recvData;
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_vec_cb);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &recvData);
+
+        std::string userAgent = urlOptions.userAgent.value_or(userAgent);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+
+        auto curlStatus = curl_easy_perform(curl);
+        int httpCode = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+
+        if (response) {
+            response->CurlStatus = curlStatus;
+            response->HttpCode = httpCode;
+
+            if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
+
+            curl_easy_cleanup(curl);
+            return response->IsSuccessful() && response->DataParsedSuccessful();
+        }
+
+        curl_easy_cleanup(curl);
+        return curlStatus == CURLE_OK;
     }
 }
