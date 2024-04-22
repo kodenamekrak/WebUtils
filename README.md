@@ -39,3 +39,37 @@ If you do not want to expose certain methods from the library to your code (for 
  - `WEBUTILS_NO_JSON` disables the rapidjson downloading
  - `WEBUTILS_NO_XML` disables the xml downloading
  - `WEBUTILS_NO_BSML` disables the sprite, texture and bsml downloading
+
+# Ratelimited downloads
+If you are finding yourself running into rate limits or just in general downloads failing for reasons, you can use the `web-utils/shared/RatelimitedDispatcher.hpp` header to send bulk requests in a rate limited fashion. these requests may have any expected `IResponse`, meaning you're not locked in to requesting 1 type per rate limited dispatcher.
+
+A usage example for downloading the google home page mulitple times (weird usecase but whatever)
+
+```c++
+#include "web-utils/shared/RatelimitedDispatcher
+#include <iostream>
+int main() {
+    WebUtils::RatelimitedDispatcher rlDl;
+    rlDl.rateLimitTime = std::chrono::milliseconds(1000);
+    rlDl.maxConcurrentRequests = 2;
+    rlDl.allFinished = [](std::span<std::unique_ptr<WebUtils::IRequest> const> requests) {
+        for (int i = 0; auto& req : requests) {
+            auto targetResponse = req->TargetResponse;
+            auto stringResponse = dynamic_cast<WebUtils::StringResponse*>(targetResponse);
+            if (stringResponse->IsSuccessful() && stringResponse->DataParsedSuccessful()) {
+                std::cout << "request " << i << ":" << std::endl;
+                std::cout << stringResponse->GetParsedData() << std::endl;
+            }
+        }
+    };
+
+    /// add some requests
+    rlDl.AddRequest<WebUtils::StringResponse>("https://google.com");
+    rlDl.AddRequest<WebUtils::StringResponse>("https://google.com");
+    rlDl.AddRequest<WebUtils::StringResponse>("https://google.com");
+    rlDl.AddRequest<WebUtils::StringResponse>("https://google.com");
+
+    auto future = rlDl.StartDispatchIfNeeded();
+    future.wait();
+}
+```

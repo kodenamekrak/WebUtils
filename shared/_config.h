@@ -28,6 +28,7 @@
 #define WEBUTILS_HAS_BSML
 #endif
 
+// user agent used for requests with WebUtils
 #ifndef WEBUTILS_USER_AGENT
 #if defined(MOD_ID) && defined(VERSION)
 #define WEBUTILS_USER_AGENT MOD_ID "/" VERSION " (+https://github.com/RedBrumbler/WebUtils)"
@@ -36,6 +37,12 @@
 #endif
 #endif
 
+// timout used with webutils
 #ifndef WEBUTILS_TIMEOUT
 #define WEBUTILS_TIMEOUT 10
+#endif
+
+// max concurrency for ratelimited dispatchers
+#ifndef WEBUTILS_MAX_CONCURRENCY
+#define WEBUTILS_MAX_CONCURRENCY (std::size_t(8))
 #endif
