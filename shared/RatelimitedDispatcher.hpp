@@ -97,7 +97,7 @@ namespace WebUtils {
             virtual std::optional<RetryOptions> RequestFinished(bool success, IRequest* req) const;
 
             /// @brief method called when all requests have finished (queue empty)
-            virtual void AllFinished();
+            virtual void AllFinished(std::span<std::unique_ptr<IRequest> const> finishedRequests);
         private:
             /// @brief mutex used to guard accesses to the requests queue
             std::shared_mutex _requestsMutex;
@@ -110,8 +110,6 @@ namespace WebUtils {
 
             /// @brief the currently executing dispatch
             std::shared_future<void> _currentRateLimitDispatch;
-            /// @brief the currently executing dispatch
-            std::atomic_int _currentlyRunningRequests;
 
             /// @brief dispatcher thread
             void DispatcherThread();

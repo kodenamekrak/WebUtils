@@ -32,22 +32,21 @@ namespace WebUtils {
     }
 
     std::optional<RatelimitedDispatcher::RetryOptions> RatelimitedDispatcher::RequestFinished(bool success, IRequest* req) const {
-        if (onRequestFinished) return std::invoke(onRequestFinished, success, req);
+        if (onRequestFinished)
+            return std::invoke(onRequestFinished, success, req);
         return std::nullopt;
     }
 
-    void RatelimitedDispatcher::AllFinished() {
-        std::unique_lock shared_lock(_finishedMutex);
-        if (allFinished) std::invoke(allFinished, _finishedRequests);
-        shared_lock.unlock();
-
-        std::unique_lock lock(_finishedMutex);
-        _finishedRequests.clear();
+    void RatelimitedDispatcher::AllFinished(std::span<std::unique_ptr<IRequest> const> finishedRequests) {
+        if (allFinished) std::invoke(allFinished, finishedRequests);
     }
 
     void RatelimitedDispatcher::DispatcherThread() {
         while (AnyRequestsToDispatch()) {
             std::vector<std::future<void>> workers;
+            // min of define max and field max,
+            // max between that and 1 (so we get at least 1),
+            // min of that and the amount of reqs we currently have
             int workerCount = std::min<std::size_t>(RequestCountToDispatch(), std::max<std::size_t>(1, std::min(maxConcurrentRequests, WEBUTILS_MAX_CONCURRENCY)));
             for (auto i = 0; i < workerCount; i++) {
                 workers.emplace_back(
@@ -55,37 +54,44 @@ namespace WebUtils {
                 );
             }
 
+            // wait for all workers to finish
             for (auto& d : workers) {
                 d.wait();
             }
         }
 
-        AllFinished();
+        std::unique_lock shared_lock(_finishedMutex);
+        AllFinished(_finishedRequests);
+        shared_lock.unlock();
+
+        std::unique_lock lock(_finishedMutex);
+        _finishedRequests.clear();
     }
 
     void RatelimitedDispatcher::DispatchWorker() {
         // work through backlog
         while (AnyRequestsToDispatch()) {
-            auto nextReq = std::chrono::high_resolution_clock::now() + timeForRequests;
-            if (_currentlyRunningRequests < maxRequestsPerTime) {
-                _currentlyRunningRequests++;
-                auto req = PopRequest();
+            // after req complete, wait until the rate limit time has passed
+            auto nextRatelimitedRequestTime = std::chrono::high_resolution_clock::now() + rateLimitTime;
 
-                // add extra time if required (like when rate limited)
-                std::optional<RetryOptions> retryOptions;
-                do {
-                    if (retryOptions.has_value()) std::this_thread::sleep_for(retryOptions->waitTime);
+            // get req from queue
+            auto req = PopRequest();
 
-                    bool success = downloader.GetAsyncInto(req->URL, req->get_TargetResponse()).get();
-                    retryOptions = RequestFinished(success, req.get());
-                } while (retryOptions.has_value());
-                _currentlyRunningRequests--;
+            // retry options used if response was ratelimited or something
+            std::optional<RetryOptions> retryOptions;
+            do {
+                if (retryOptions.has_value()) std::this_thread::sleep_for(retryOptions->waitTime);
 
-                std::unique_lock lock(_finishedMutex);
-                _finishedRequests.emplace_back(std::move(req));
-            }
+                bool success = downloader.GetInto(req->URL, req->get_TargetResponse());
+                retryOptions = RequestFinished(success, req.get());
+            } while (retryOptions.has_value());
 
-            std::this_thread::sleep_until(nextReq);
+            std::unique_lock lock(_finishedMutex);
+            _finishedRequests.emplace_back(std::move(req));
+            lock.unlock();
+
+            // waits until the rate limit has passed, but if retries have happened this could just not sleep
+            std::this_thread::sleep_until(nextRatelimitedRequestTime);
         }
     }
 }
