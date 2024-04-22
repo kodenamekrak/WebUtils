@@ -39,6 +39,7 @@ namespace WebUtils {
             std::string userAgent;
             int timeOut;
 
+#pragma region GET
             /// @brief generic get for IResponse classes
             /// @return whether there was data & it was parsed successfully
             template<response_impl T>
@@ -78,5 +79,61 @@ namespace WebUtils {
             std::future<bool> GetAsyncInto(URLOptions urlOptions, IResponse* targetResponse) const {
                 return std::async(std::launch::any, &DownloaderUtility::GetInto, this, std::forward<URLOptions>(urlOptions), targetResponse);
             }
+#pragma endregion // GET
+
+#pragma region POST
+            /// @brief generic async post method
+            /// @param urlOptions the url options to pass to curl
+            /// @param data the data to send. make sure it lives longer than the request takes!
+            /// @return future response
+            template<typename T = void>
+            requires((response_impl<T> && std::is_default_constructible_v<T>) || std::is_same_v<T, void>)
+            std::future<T> PostAsync(URLOptions urlOptions, std::span<uint8_t const> data) const {
+                return std::async(std::launch::any, &DownloaderUtility::Post<T>, this, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data));
+            }
+
+            /// @brief generic async get for IResponse classes
+            /// @param urlOptions the url options to pass to curl
+            /// @param data the data to send. make sure it lives longer than the request takes!
+            /// @param onFinished method called with the result of the post request, if null the request doesn't happen
+            template<response_impl T>
+            requires(std::is_default_constructible_v<T>)
+            void PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished) {
+                if (!onFinished) return;
+
+                std::thread([this](URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished){
+                    onFinished(Post<T>(urlOptions, data));
+                }, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data), std::forward<std::function<void(T)>>(onFinished)).detach();
+            }
+
+            /// @brief generic post method
+            /// @tparam T expected response type
+            /// @param urlOptions the url options to pass to curl
+            /// @param data the data to send.
+            /// @return request response
+            template<response_impl T>
+            requires(std::is_default_constructible_v<T>)
+            T Post(URLOptions urlOptions, std::span<uint8_t const> data) const {
+                T response{};
+                PostInto(urlOptions, data, &response);
+                return response;
+            }
+
+            /// @brief posts to a url synchronously
+            /// @param urlOptions the url options to pass to curl
+            /// @param data the data to send.
+            /// @param targetResponse post responses may contain response data, this is where it gets parsed into
+            /// @return data parsed successfully
+            bool PostInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* targetResponse) const;
+
+            /// @brief posts to a url async
+            /// @param urlOptions the url options to pass to curl
+            /// @param data the data to send. make sure it lives longer than the request takes!
+            /// @param targetResponse post responses may contain response data, this is where it gets parsed into
+            /// @return data parsed successfully
+            std::future<bool> PostAsyncInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* targetResponse) {
+                return std::async(std::launch::any, &DownloaderUtility::PostInto, this, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data), std::forward<IResponse*>(targetResponse));
+            }
+#pragma endregion // POST
     };
 }
