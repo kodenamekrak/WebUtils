@@ -72,7 +72,6 @@ namespace WebUtils {
         std::string userAgent = urlOptions.userAgent.value_or(userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL);
 
         response->CurlStatus = curl_easy_perform(curl);
         if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
@@ -144,7 +143,6 @@ namespace WebUtils {
         std::string userAgent = urlOptions.userAgent.value_or(userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL);
 
         auto curlStatus = curl_easy_perform(curl);
         int httpCode = 0;
