@@ -69,8 +69,8 @@ namespace WebUtils {
     struct WEBUTILS_EXPORT GenericResponse : public IResponse {
         int httpCode;
         int curlStatus;
-        std::optional<T> responseData;
         std::string responseHeaders;
+        std::optional<T> responseData;
 
         virtual int get_HttpCode() const noexcept override { return httpCode; }
         virtual void set_HttpCode(int httpCode) noexcept override { this->httpCode = httpCode; }
