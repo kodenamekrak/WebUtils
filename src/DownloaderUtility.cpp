@@ -57,6 +57,7 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
         curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
+        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
 
@@ -124,6 +125,7 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
         curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
+        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
 
