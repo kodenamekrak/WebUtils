@@ -7,15 +7,15 @@
 #include <vector>
 #include <thread>
 
-#if WEBUTILS_HAS_RAPIDJSON
+#if defined(WEBUTILS_HAS_RAPIDJSON)
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
 #endif
 
-#if WEBUTILS_HAS_XML
+#if defined(WEBUTILS_HAS_XML)
 #include "tinyxml2/shared/tinyxml2.h"
 #endif
 
-#if WEBUTILS_HAS_BSML
+#if defined(WEBUTILS_HAS_BSML)
 #include "UnityEngine/Sprite.hpp"
 #include "UnityEngine/Texture2D.hpp"
 // include can be either from bsml directly or from a lib using bsml
@@ -109,7 +109,7 @@ namespace WebUtils {
         }
     };
 
-#if WEBUTILS_HAS_RAPIDJSON
+#if defined(WEBUTILS_HAS_RAPIDJSON)
     /// @brief string response, simply reading the data as a json string
     struct WEBUTILS_EXPORT JsonResponse : public GenericResponse<rapidjson::Document> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
@@ -123,7 +123,7 @@ namespace WebUtils {
     };
 #endif
 
-#if WEBUTILS_HAS_XML
+#if defined(WEBUTILS_HAS_XML)
     /// @brief string response, simply reading the data as an xml string
     struct WEBUTILS_EXPORT XMLExport : public GenericResponse<tinyxml2::XMLDocument> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
@@ -138,7 +138,7 @@ namespace WebUtils {
     }
 #endif
 
-#if WEBUTILS_HAS_BSML
+#if defined(WEBUTILS_HAS_BSML)
     /// @brief string response, simply reading the data as a texture
     struct WEBUTILS_EXPORT TextureResponse : public GenericResponse<UnityW<UnityEngine::Texture2D>> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
