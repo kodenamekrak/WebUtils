@@ -20,6 +20,12 @@ namespace WebUtils {
         return addedData.size();
     };
 
+    static std::size_t write_str_cb(char* content, std::size_t size, std::size_t nmemb, std::string* str) {
+        std::string_view addedText(content, (size * nmemb));
+        str->append(addedText);
+        return addedText.size();
+    };
+
     bool DownloaderUtility::GetInto(URLOptions urlOptions, IResponse* response) const {
         if (!response) return false;
 
@@ -51,6 +57,7 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
         curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
+        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
 
@@ -58,12 +65,17 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_vec_cb);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &recvData);
 
+        std::string recvHeaders;
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_str_cb);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &recvHeaders);
+
         std::string userAgent = urlOptions.userAgent.value_or(userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL);
 
         response->CurlStatus = curl_easy_perform(curl);
         if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
+        response->AcceptHeaders(recvHeaders);
 
         int httpCode = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
@@ -113,6 +125,7 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
         curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
+        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
 
@@ -123,9 +136,14 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_vec_cb);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &recvData);
 
+        std::string recvHeaders;
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_str_cb);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &recvHeaders);
+
         std::string userAgent = urlOptions.userAgent.value_or(userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL ? 1 : 0);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL ? 2 : 0);
 
         auto curlStatus = curl_easy_perform(curl);
         int httpCode = 0;
@@ -136,6 +154,7 @@ namespace WebUtils {
             response->HttpCode = httpCode;
 
             if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
+            response->AcceptHeaders(recvHeaders);
 
             curl_easy_cleanup(curl);
             return response->IsSuccessful() && response->DataParsedSuccessful();

@@ -50,6 +50,9 @@ namespace WebUtils {
             /// @brief method that will be called on your response to set the data
             virtual bool AcceptData(std::span<uint8_t const> data) = 0;
 
+            /// @brief method that will be called on your response to set the returned header data
+            virtual bool AcceptHeaders(std::string_view headers) = 0;
+
             /// @brief for some returned datatypes, it's worth it to check whether it parsed successfully
             virtual bool DataParsedSuccessful() const noexcept = 0;
 
@@ -66,6 +69,7 @@ namespace WebUtils {
     struct WEBUTILS_EXPORT GenericResponse : public IResponse {
         int httpCode;
         int curlStatus;
+        std::string responseHeaders;
         std::optional<T> responseData;
 
         virtual int get_HttpCode() const noexcept override { return httpCode; }
@@ -80,6 +84,9 @@ namespace WebUtils {
         /// @brief gets the response item, will throw if invalid
         /// @throw should throw if response was not valid
         virtual T const& GetParsedData() const { return responseData.value(); };
+
+        /// @brief accepts the headers from the request
+        virtual bool AcceptHeaders(std::string_view headers) override { responseHeaders.assign(headers); return true; }
 
         virtual bool DataParsedSuccessful() const noexcept override { return responseData.has_value(); };
     };
