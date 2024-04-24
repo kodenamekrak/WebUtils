@@ -1,8 +1,8 @@
 #pragma once
 
-#include "_config.h"
-#include "Response.hpp"
-#include "DownloaderUtility.hpp"
+#include "./_config.h"
+#include "./Response.hpp"
+#include "./DownloaderUtility.hpp"
 #include <type_traits>
 
 namespace WebUtils {
