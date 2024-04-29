@@ -46,7 +46,7 @@ If you are finding yourself running into rate limits or just in general download
 A usage example for downloading the google home page mulitple times (weird usecase but whatever)
 
 ```c++
-#include "web-utils/shared/RatelimitedDispatcher
+#include "web-utils/shared/RatelimitedDispatcher"
 #include <iostream>
 int main() {
     WebUtils::RatelimitedDispatcher rlDl;
