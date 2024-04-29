@@ -53,9 +53,9 @@ namespace WebUtils {
         }
 
         auto url = urlOptions.fullURl();
-        std::string escapedUrl = curl_easy_escape(curl, url.c_str(), url.size());
+        auto escapedUrl = curl_easy_escape(curl, url.c_str(), url.size());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
-        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
         curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -74,6 +74,8 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL);
 
         response->CurlStatus = curl_easy_perform(curl);
+        free(escapedUrl);
+
         if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
         response->AcceptHeaders(recvHeaders);
 
@@ -121,9 +123,9 @@ namespace WebUtils {
         }
 
         auto url = urlOptions.fullURl();
-        std::string escapedUrl = curl_easy_escape(curl, url.c_str(), url.size());
+        auto escapedUrl = curl_easy_escape(curl, url.c_str(), url.size());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
-        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
         curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -146,6 +148,8 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL ? 2 : 0);
 
         auto curlStatus = curl_easy_perform(curl);
+        free(escapedUrl);
+
         int httpCode = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
 
