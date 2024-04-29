@@ -7,6 +7,7 @@
 #include <shared_mutex>
 #include <chrono>
 #include <queue>
+#include <type_traits>
 
 namespace WebUtils {
     class IRequest {
@@ -15,20 +16,22 @@ namespace WebUtils {
 
             virtual URLOptions const& get_URL() const = 0;
             virtual IResponse* get_TargetResponse() = 0;
-            virtual IResponse* get_TargetResponse() const = 0;
+            virtual IResponse const* get_TargetResponse() const = 0;
 
             __declspec(property(get=get_TargetResponse)) IResponse* TargetResponse;
             __declspec(property(get=get_URL)) URLOptions const& URL;
     };
 
     template<response_impl T>
+    requires(std::is_default_constructible_v<T>)
     struct GenericRequest : public IRequest {
+        GenericRequest(URLOptions url) : url(url) {}
         URLOptions url;
-        T targetResponse;
+        T targetResponse{};
 
         virtual URLOptions const& get_URL() const override { return url; }
         virtual IResponse* get_TargetResponse() override { return &targetResponse; };
-        virtual IResponse* get_TargetResponse() const override { return &targetResponse; };
+        virtual IResponse const* get_TargetResponse() const override { return &targetResponse; };
     };
 
     /// @brief struct to make sending multiple requests easier when dealing with rate limits

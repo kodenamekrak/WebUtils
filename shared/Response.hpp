@@ -134,7 +134,7 @@ namespace WebUtils {
             }
             return false;
         }
-    }
+    };
 #endif
 
 #if defined(WEBUTILS_HAS_BSML)
@@ -181,6 +181,6 @@ namespace WebUtils {
             responseData = BSML::BSMLParser::parse(str);
             return true;
         }
-    }
+    };
 #endif
 }
