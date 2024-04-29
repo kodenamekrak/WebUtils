@@ -135,7 +135,7 @@ namespace WebUtils {
             tinyxml2::XMLDocument doc;
             auto parseResult = doc.Parse((char*)data.data(), data.size());
             if (parseResult == tinyxml2::XML_SUCCESS) {
-                responseData = std::move(doc);
+                responseData = doc;
                 return true;
             }
             return false;
