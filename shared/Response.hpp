@@ -25,12 +25,18 @@
 #include "BSML/Parsing/BSMLParser.hpp"
 #endif
 
-#include "bsml/shared/BSML/Parsing/BSMLParser.hpp"
 #if __has_include("bsml/shared/BSML/MainThreadScheduler.hpp")
 #include "bsml/shared/BSML/MainThreadScheduler.hpp"
 #else
 #include "BSML/MainThreadScheduler.hpp"
 #endif
+
+#if __has_include("bsml/shared/Helpers/utilities.hpp")
+#include "bsml/shared/Helpers/utilities.hpp"
+#else
+#include "Helpers/utilities.hpp"
+#endif
+
 #endif
 
 namespace WebUtils {
@@ -145,7 +151,7 @@ namespace WebUtils {
             std::copy(data.begin(), data.end(), imageData.begin());
             bool mainThreadRan = false;
             BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
-                auto tex = LoadTextureRaw(imageData);
+                auto tex = BSML::Utilities::LoadTextureRaw(imageData);
                 if (tex) this->responseData = tex;
                 mainThreadRan = true;
             });
@@ -161,7 +167,7 @@ namespace WebUtils {
             std::copy(data.begin(), data.end(), imageData.begin());
             bool mainThreadRan = false;
             BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
-                auto tex = LoadTextureRaw(imageData);
+                auto tex = BSML::Utilities::LoadTextureRaw(imageData);
                 if (tex) {
                     auto sprite = BSML::Utilities::LoadSpriteFromTexture(tex);
                     if (sprite) this->responseData = sprite;
@@ -174,7 +180,7 @@ namespace WebUtils {
     };
 
     /// @brief string response, simply reading & parsing the data as a bsml doc
-    struct WEBUTILS_EXPORT BSMLResponse : public GenericResponse<std::shared_ptr<BSMLParser>> {
+    struct WEBUTILS_EXPORT BSMLResponse : public GenericResponse<std::shared_ptr<BSML::BSMLParser>> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
             // ensure null termination, if bsml was smarter about this we wouldn't have to do this
             std::string str((char*)data.data(), data.size());
