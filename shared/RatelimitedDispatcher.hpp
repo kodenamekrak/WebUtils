@@ -10,7 +10,7 @@
 #include <type_traits>
 
 namespace WebUtils {
-    class IRequest {
+    class WEBUTILS_EXPORT IRequest {
         public:
             virtual ~IRequest() = default;
 
@@ -24,7 +24,7 @@ namespace WebUtils {
 
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    struct GenericRequest : public IRequest {
+    struct WEBUTILS_EXPORT GenericRequest : public IRequest {
         GenericRequest(URLOptions url) : url(url) {}
         URLOptions url;
         T targetResponse{};
@@ -36,7 +36,7 @@ namespace WebUtils {
 
     /// @brief struct to make sending multiple requests easier when dealing with rate limits
     /// simply set your limits, set the values for the downloader, and run the requests
-    struct RatelimitedDispatcher {
+    struct WEBUTILS_EXPORT RatelimitedDispatcher {
         public:
             virtual ~RatelimitedDispatcher() = default;
 
