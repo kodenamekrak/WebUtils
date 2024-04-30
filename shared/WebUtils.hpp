@@ -12,31 +12,34 @@ namespace WebUtils {
     /// @brief runs a get request asynchronously
     /// @tparam T the response type to output
     /// @param urlOptions url options to pass to curl
+    /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
     /// @return future response
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline std::future<T> WEBUTILS_EXPORT GetAsync(URLOptions urlOptions) {
-        return downloader.GetAsync<T>(std::forward<URLOptions>(urlOptions));
+    inline std::future<T> WEBUTILS_EXPORT GetAsync(URLOptions urlOptions, std::function<void(float)> progressReport = nullptr) {
+        return downloader.GetAsync<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(float)>>(progressReport));
     }
 
     /// @brief runs a get request asynchronously, calling onFinished when done
     /// @tparam T the response type to output
     /// @param urlOptions url options to pass to curl
     /// @param onFinished function to run when done, NOT RAN ON MAIN OR BOUND IL2CPP THREAD
+    /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline void WEBUTILS_EXPORT GetAsync(URLOptions urlOptions, std::function<void(T)> onFinished) {
-        downloader.GetAsync<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished));   \
+    inline void WEBUTILS_EXPORT GetAsync(URLOptions urlOptions, std::function<void(T)> onFinished, std::function<void(float)> progressReport = nullptr) {
+        downloader.GetAsync<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished), std::forward<std::function<void(float)>>(progressReport));
     }
 
     /// @brief runs a get request synchronously
     /// @tparam T the response type to output
     /// @param urlOptions url options to pass to curl
+    /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
     /// @return response
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline T WEBUTILS_EXPORT Get(URLOptions urlOptions) {
-        return downloader.Get<T>(std::forward<URLOptions>(urlOptions));
+    inline T WEBUTILS_EXPORT Get(URLOptions urlOptions, std::function<void(float)> progressReport = nullptr) {
+        return downloader.Get<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(float)>>(progressReport));
     }
 #pragma endregion // GET
 
@@ -45,11 +48,12 @@ namespace WebUtils {
     /// @tparam T the response type to output
     /// @param urlOptions url options to pass to curl
     /// @param data the data to send. make sure it lives longer than the request takes!
+    /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
     /// @return future response
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline std::future<T> WEBUTILS_EXPORT PostAsync(URLOptions urlOptions, std::span<uint8_t const> data) {
-        return downloader.PostAsync<T>(std::forward<URLOptions>(urlOptions));
+    inline std::future<T> WEBUTILS_EXPORT PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(float)> progressReport = nullptr) {
+        return downloader.PostAsync<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(float)>>(progressReport));
     }
 
     /// @brief runs a get request asynchronously, calling onFinished when done
@@ -57,21 +61,23 @@ namespace WebUtils {
     /// @param urlOptions url options to pass to curl
     /// @param data the data to send. make sure it lives longer than the request takes!
     /// @param onFinished function to run when done, NOT RAN ON MAIN OR BOUND IL2CPP THREAD
+    /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline void WEBUTILS_EXPORT PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished) {
-        downloader.PostAsync<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished));   \
+    inline void WEBUTILS_EXPORT PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished, std::function<void(float)> progressReport = nullptr) {
+        downloader.PostAsync<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished), std::forward<std::function<void(float)>>(progressReport));
     }
 
     /// @brief runs a get request synchronously
     /// @tparam T the response type to output
     /// @param urlOptions url options to pass to curl
     /// @param data the data to send.
+    /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
     /// @return response
     template<response_impl T>
     requires(std::is_default_constructible_v<T>)
-    inline T WEBUTILS_EXPORT Post(URLOptions urlOptions, std::span<uint8_t const> data) {
-        return downloader.Post<T>(std::forward<URLOptions>(urlOptions));
+    inline T WEBUTILS_EXPORT Post(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(float)> progressReport = nullptr) {
+        return downloader.Post<T>(std::forward<URLOptions>(urlOptions), std::forward<std::function<void(float)>>(progressReport));
     }
 #pragma endregion // POST
 }

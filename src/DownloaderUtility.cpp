@@ -26,7 +26,7 @@ namespace WebUtils {
         return addedText.size();
     };
 
-    bool DownloaderUtility::GetInto(URLOptions urlOptions, IResponse* response) const {
+    bool DownloaderUtility::GetInto(URLOptions urlOptions, IResponse* response, std::function<void(float)> progressReport) const {
         if (!response) return false;
 
         // if the url is for a filepath, read it from disk instead
@@ -61,6 +61,19 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
 
+        if (progressReport != nullptr) {
+            curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
+            curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &progressReport);
+            curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, +[](std::function<void(float)>* progressReport, curl_off_t dltotal, curl_off_t dlnow, curl_off_t utotal, curl_off_t unow){
+                auto& func = *progressReport;
+                // progress for get is the download values
+                float progress = (float)dltotal / (float)dlnow;
+                if (std::isnan(progress)) progress = 0.0f;
+                func(progress);
+                return 0;
+            });
+        }
+
         std::vector<uint8_t> recvData;
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_vec_cb);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &recvData);
@@ -87,7 +100,7 @@ namespace WebUtils {
         return response->IsSuccessful() && response->DataParsedSuccessful();
     }
 
-    bool DownloaderUtility::PostInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* response) const {
+    bool DownloaderUtility::PostInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* response, std::function<void(float)> progressReport) const {
         // if the url is for a filepath, write it to disk instead
         if (urlOptions.isFileURL()) {
             std::filesystem::path filePath(urlOptions.url.substr(7));
@@ -133,6 +146,19 @@ namespace WebUtils {
 
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (char*)data.data());
+
+        if (progressReport != nullptr) {
+            curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
+            curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &progressReport);
+            curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, +[](std::function<void(float)>* progressReport, curl_off_t dltotal, curl_off_t dlnow, curl_off_t utotal, curl_off_t unow){
+                auto& func = *progressReport;
+                // progress for post is the upload values
+                float progress = (float)utotal / (float)unow;
+                if (std::isnan(progress)) progress = 0.0f;
+                func(progress);
+                return 0;
+            });
+        }
 
         std::vector<uint8_t> recvData;
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_vec_cb);
