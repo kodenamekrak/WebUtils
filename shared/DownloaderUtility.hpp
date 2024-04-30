@@ -46,43 +46,48 @@ namespace WebUtils {
 
 #pragma region GET
             /// @brief generic get for IResponse classes
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             /// @return whether there was data & it was parsed successfully
             template<response_impl T>
             requires(std::is_default_constructible_v<T>)
-            std::future<T> GetAsync(URLOptions urlOptions) const {
-                return std::async(std::launch::any, &DownloaderUtility::Get<T>, this, std::forward<URLOptions>(urlOptions));
+            std::future<T> GetAsync(URLOptions urlOptions, std::function<void(float)> progressReport = nullptr) const {
+                return std::async(std::launch::any, &DownloaderUtility::Get<T>, this, std::forward<URLOptions>(urlOptions), std::forward<std::function<void(float)>>(progressReport));
             }
 
             /// @brief generic async get for IResponse classes
             /// @param urlOptions the url options to pass to curl
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             template<response_impl T>
             requires(std::is_default_constructible_v<T>)
-            void GetAsync(URLOptions urlOptions, std::function<void(T)> onFinished) const {
+            void GetAsync(URLOptions urlOptions, std::function<void(T)> onFinished, std::function<void(float)> progressReport = nullptr) const {
                 if (!onFinished) return;
 
-                std::thread([this](URLOptions urlOptions, std::function<void(T)> onFinished){
-                    onFinished(Get<T>(urlOptions));
-                }, std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished)).detach();
+                std::thread([this](URLOptions urlOptions, std::function<void(T)> onFinished, std::function<void(float)> progressReport){
+                    onFinished(Get<T>(urlOptions, progressReport));
+                }, std::forward<URLOptions>(urlOptions), std::forward<std::function<void(T)>>(onFinished), std::forward<std::function<void(float)>>(progressReport)).detach();
             }
 
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             template<response_impl T>
             requires(std::is_default_constructible_v<T>)
-            T Get(URLOptions urlOptions) const {
+            T Get(URLOptions urlOptions, std::function<void(float)> progressReport = nullptr) const {
                 T response{};
-                GetInto(std::forward<URLOptions>(urlOptions), &response);
+                GetInto(std::forward<URLOptions>(urlOptions), &response, progressReport);
                 return response;
             }
 
             /// @brief gets data from a url synchronously
             /// @param urlOptions the url options to pass to curl
             /// @param targetResponse response to get into
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             /// @return data parsed successfully
-            bool GetInto(URLOptions urlOptions, IResponse* targetResponse) const;
+            bool GetInto(URLOptions urlOptions, IResponse* targetResponse, std::function<void(float)> progressReport = nullptr) const;
 
             /// @brief generic get for IResponse classes
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             /// @return whether there was data & it was parsed successfully
-            std::future<bool> GetAsyncInto(URLOptions urlOptions, IResponse* targetResponse) const {
-                return std::async(std::launch::any, &DownloaderUtility::GetInto, this, std::forward<URLOptions>(urlOptions), targetResponse);
+            std::future<bool> GetAsyncInto(URLOptions urlOptions, IResponse* targetResponse, std::function<void(float)> progressReport = nullptr) const {
+                return std::async(std::launch::any, &DownloaderUtility::GetInto, this, std::forward<URLOptions>(urlOptions), targetResponse, std::forward<std::function<void(float)>>(progressReport));
             }
 #pragma endregion // GET
 
@@ -90,37 +95,40 @@ namespace WebUtils {
             /// @brief generic async post method
             /// @param urlOptions the url options to pass to curl
             /// @param data the data to send. make sure it lives longer than the request takes!
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             /// @return future response
             template<typename T = void>
             requires((response_impl<T> && std::is_default_constructible_v<T>) || std::is_same_v<T, void>)
-            std::future<T> PostAsync(URLOptions urlOptions, std::span<uint8_t const> data) const {
-                return std::async(std::launch::any, &DownloaderUtility::Post<T>, this, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data));
+            std::future<T> PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(float)> progressReport = nullptr) const {
+                return std::async(std::launch::any, &DownloaderUtility::Post<T>, this, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data), std::forward<std::function<void(float)>>(progressReport));
             }
 
             /// @brief generic async get for IResponse classes
             /// @param urlOptions the url options to pass to curl
             /// @param data the data to send. make sure it lives longer than the request takes!
             /// @param onFinished method called with the result of the post request, if null the request doesn't happen
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             template<response_impl T>
             requires(std::is_default_constructible_v<T>)
-            void PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished) {
+            void PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished, std::function<void(float)> progressReport = nullptr) {
                 if (!onFinished) return;
 
-                std::thread([this](URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished){
-                    onFinished(Post<T>(urlOptions, data));
-                }, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data), std::forward<std::function<void(T)>>(onFinished)).detach();
+                std::thread([this](URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished, std::function<void(float)> progressReport){
+                    onFinished(Post<T>(urlOptions, data, progressReport));
+                }, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data), std::forward<std::function<void(T)>>(onFinished), std::forward<std::function<void(float)>>(progressReport)).detach();
             }
 
             /// @brief generic post method
             /// @tparam T expected response type
             /// @param urlOptions the url options to pass to curl
             /// @param data the data to send.
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             /// @return request response
             template<response_impl T>
             requires(std::is_default_constructible_v<T>)
-            T Post(URLOptions urlOptions, std::span<uint8_t const> data) const {
+            T Post(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(float)> progressReport = nullptr) const {
                 T response{};
-                PostInto(urlOptions, data, &response);
+                PostInto(urlOptions, data, &response, progressReport);
                 return response;
             }
 
@@ -128,16 +136,18 @@ namespace WebUtils {
             /// @param urlOptions the url options to pass to curl
             /// @param data the data to send.
             /// @param targetResponse post responses may contain response data, this is where it gets parsed into
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             /// @return data parsed successfully
-            bool PostInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* targetResponse) const;
+            bool PostInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* targetResponse, std::function<void(float)> progressReport = nullptr) const;
 
             /// @brief posts to a url async
             /// @param urlOptions the url options to pass to curl
             /// @param data the data to send. make sure it lives longer than the request takes!
             /// @param targetResponse post responses may contain response data, this is where it gets parsed into
+            /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             /// @return data parsed successfully
-            std::future<bool> PostAsyncInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* targetResponse) {
-                return std::async(std::launch::any, &DownloaderUtility::PostInto, this, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data), std::forward<IResponse*>(targetResponse));
+            std::future<bool> PostAsyncInto(URLOptions urlOptions, std::span<uint8_t const> data, IResponse* targetResponse, std::function<void(float)> progressReport = nullptr) {
+                return std::async(std::launch::any, &DownloaderUtility::PostInto, this, std::forward<URLOptions>(urlOptions), std::forward<std::span<uint8_t const>>(data), std::forward<IResponse*>(targetResponse), std::forward<std::function<void(float)>>(progressReport));
             }
 #pragma endregion // POST
     };
