@@ -11,10 +11,6 @@
 #include "beatsaber-hook/shared/config/rapidjson-utils.hpp"
 #endif
 
-#if defined(WEBUTILS_HAS_XML)
-#include "tinyxml2/shared/tinyxml2.h"
-#endif
-
 #if defined(WEBUTILS_HAS_BSML)
 #include "UnityEngine/Sprite.hpp"
 #include "UnityEngine/Texture2D.hpp"
@@ -124,21 +120,6 @@ namespace WebUtils {
             if (doc.HasParseError()) return false;
             responseData = std::move(doc);
             return true;
-        }
-    };
-#endif
-
-#if defined(WEBUTILS_HAS_XML)
-    /// @brief string response, simply reading the data as an xml string
-    struct WEBUTILS_EXPORT XMLExport : public GenericResponse<tinyxml2::XMLDocument> {
-        virtual bool AcceptData(std::span<uint8_t const> data) override {
-            tinyxml2::XMLDocument doc;
-            auto parseResult = doc.Parse((char*)data.data(), data.size());
-            if (parseResult == tinyxml2::XML_SUCCESS) {
-                responseData = doc;
-                return true;
-            }
-            return false;
         }
     };
 #endif

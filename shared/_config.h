@@ -13,11 +13,6 @@
 #define WEBUTILS_HAS_RAPIDJSON
 #endif
 
-// check if xml parsing is available
-#if !defined(WEBUTILS_NO_XML) && __has_include("tinyxml2/shared/tinyxml2.h")
-#define WEBUTILS_HAS_XML
-#endif
-
 // if no sprite/tex, just ignore bsml availability
 #if defined(WEBUTILS_NO_SPRITE) || defined(WEBUTILS_NO_TEXTURE)
 #define WEBUTILS_NO_BSML

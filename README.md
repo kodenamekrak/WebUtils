@@ -7,7 +7,6 @@ Both GET and POST are supported, find the relevant methods in `web-utils/shared/
  - String as `std::string`
  - Data as `std::vector<uint8_t>`
  - Json as `rapidjson::Document` (requires bs hook)
- - XML as `tinyxml2::XMLDocument` (requires tinyxml2)
  - BSML as `std::shared_ptr<BSML::BSMLDocParser>` (requires bsml)
  - Texture2D as `UnityW<UnityEngine::Texture2D>` (requires bsml)
  - Sprite as `UnityW<UnityEngine::Sprite>` (requires bsml)
@@ -37,7 +36,6 @@ If you're not sure how this is done, I would advise you to have a look over the 
 If you do not want to expose certain methods from the library to your code (for example, you're getting linker errors because the required library is not linked directly) you can do so with various compile time defines:
 
  - `WEBUTILS_NO_JSON` disables the rapidjson downloading
- - `WEBUTILS_NO_XML` disables the xml downloading
  - `WEBUTILS_NO_BSML` disables the sprite, texture and bsml downloading
 
 # Ratelimited downloads
