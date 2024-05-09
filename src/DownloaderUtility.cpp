@@ -1,4 +1,5 @@
 #include "DownloaderUtility.hpp"
+#include "logging.hpp"
 
 #include "libcurl/shared/curl.h"
 #include "libcurl/shared/easy.h"
@@ -13,6 +14,37 @@ namespace WebUtils {
         for (auto& [key, value] : queries) formattedQueries.emplace_back(fmt::format("{}={}", key, value));
         return fmt::format("{}?{}", url, fmt::join(formattedQueries, "&"));
     }
+
+    std::pair<char, char> getByteChars(char c) {
+        static char nibbleToChar[] = "0123456789abcdef";
+        auto lower = c & 0b1111;
+        auto upper = (c >> 4) & 0b1111;
+
+        return {nibbleToChar[lower], nibbleToChar[upper]};
+    }
+
+    std::string escape(std::string_view url) {
+        static char forbidden[] = "@&;:<>=?\"'\\!#%+$,{}|^[]`";
+        static auto forbiddenEnd = forbidden + (sizeof(forbidden) / sizeof(char));
+        static auto isForbidden = [](char c) { return std::find(forbidden, forbiddenEnd, c) != forbiddenEnd; };
+
+        std::string escaped;
+        escaped.reserve(url.size());
+
+        for (auto c : url) {
+            if (isForbidden(c)) {
+                escaped.push_back(u'%');
+                // we lose width here but all forbidden chars are only as big as 1 byte (char) anyway
+                auto [lc, uc] = getByteChars(static_cast<char>(c));
+                escaped.push_back(uc);
+                escaped.push_back(lc);
+            } else {
+                escaped.push_back(c);
+            }
+        }
+
+        return escaped;
+}
 
     static std::size_t write_vec_cb(uint8_t* content, std::size_t size, std::size_t nmemb, std::vector<uint8_t>* vec) {
         std::span<uint8_t> addedData(content, (size * nmemb));
@@ -53,9 +85,15 @@ namespace WebUtils {
         }
 
         auto url = urlOptions.fullURl();
-        auto escapedUrl = curl_easy_escape(curl, url.c_str(), url.size());
+        auto view = std::string_view(url);
+        auto urlProtocol = view.substr(0, view.find("://"));
+        auto escapedUrl = fmt::format("{}://{}", urlProtocol, escape(std::string_view(url).substr(urlProtocol.size() + 3)));
+
+        VERBOSE("GET Request URL: {}", url);
+        VERBOSE("GET Escaped URL: {}", escapedUrl);
+
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
-        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl);
+        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
         curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -87,14 +125,17 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL);
 
         response->CurlStatus = curl_easy_perform(curl);
-        free(escapedUrl);
-
-        if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
-        response->AcceptHeaders(recvHeaders);
 
         int httpCode = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
         response->HttpCode = httpCode;
+
+        VERBOSE("Get result: curl {}, http {}", response->CurlStatus, httpCode);
+
+        if (response->CurlStatus == CURLE_OK) {
+            response->AcceptData(recvData);
+            response->AcceptHeaders(recvHeaders);
+        }
 
         curl_easy_cleanup(curl);
         return response->IsSuccessful() && response->DataParsedSuccessful();
@@ -136,9 +177,15 @@ namespace WebUtils {
         }
 
         auto url = urlOptions.fullURl();
-        auto escapedUrl = curl_easy_escape(curl, url.c_str(), url.size());
+        auto view = std::string_view(url);
+        auto urlProtocol = view.substr(0, view.find("://"));
+        auto escapedUrl = fmt::format("{}://{}", urlProtocol, escape(std::string_view(url).substr(urlProtocol.size() + 3)));
+
+        VERBOSE("POST Request URL: {}", url);
+        VERBOSE("POST Escaped URL: {}", escapedUrl);
+
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
-        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl);
+        curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, urlOptions.timeOut.value_or(timeOut));
         curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, urlOptions.encoding.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -173,18 +220,20 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL ? 1 : 0);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL ? 2 : 0);
 
-        auto curlStatus = curl_easy_perform(curl);
-        free(escapedUrl);
+        int curlStatus = curl_easy_perform(curl);
 
         int httpCode = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
 
+        VERBOSE("Post result: curl {}, http {}", curlStatus, httpCode);
         if (response) {
             response->CurlStatus = curlStatus;
             response->HttpCode = httpCode;
 
-            if (response->CurlStatus == CURLE_OK) response->AcceptData(recvData);
-            response->AcceptHeaders(recvHeaders);
+            if (response->CurlStatus == CURLE_OK) {
+                response->AcceptData(recvData);
+                response->AcceptHeaders(recvHeaders);
+            }
 
             curl_easy_cleanup(curl);
             return response->IsSuccessful() && response->DataParsedSuccessful();
