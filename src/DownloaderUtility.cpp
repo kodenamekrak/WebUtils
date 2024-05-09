@@ -122,7 +122,8 @@ namespace WebUtils {
 
         std::string userAgent = urlOptions.userAgent.value_or(userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL ? 1 : 0);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL ? 2 : 0);
 
         response->CurlStatus = curl_easy_perform(curl);
 
