@@ -44,7 +44,7 @@ target_compile_definitions(web-utils PRIVATE FMT_HEADER_ONLY)
 file(GLOB so_files ${EXTERN_DIR}/libs/lib*.so)
 file(GLOB a_files ${EXTERN_DIR}/libs/lib*.a)
 
-target_link_libraries(web-utils PRIVATE -lz ${so_files} ${a_files})
+target_link_libraries(web-utils PRIVATE -lz -llog ${so_files} ${a_files})
 
 add_custom_command(
     TARGET web-utils POST_BUILD
