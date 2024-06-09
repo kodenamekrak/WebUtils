@@ -105,7 +105,7 @@ namespace WebUtils {
             curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, +[](std::function<void(float)>* progressReport, curl_off_t dltotal, curl_off_t dlnow, curl_off_t utotal, curl_off_t unow){
                 auto& func = *progressReport;
                 // progress for get is the download values
-                float progress = (float)dltotal / (float)dlnow;
+                float progress = (float)dlnow / (float)dltotal;
                 if (std::isnan(progress)) progress = 0.0f;
                 func(progress);
                 return 0;
@@ -201,7 +201,7 @@ namespace WebUtils {
             curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, +[](std::function<void(float)>* progressReport, curl_off_t dltotal, curl_off_t dlnow, curl_off_t utotal, curl_off_t unow){
                 auto& func = *progressReport;
                 // progress for post is the upload values
-                float progress = (float)utotal / (float)unow;
+                float progress = (float)unow/ (float)utotal;
                 if (std::isnan(progress)) progress = 0.0f;
                 func(progress);
                 return 0;
