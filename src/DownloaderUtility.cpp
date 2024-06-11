@@ -41,7 +41,7 @@ namespace WebUtils {
 
     std::string URLOptions::fullURl() const {
         auto protocol = this->protocol();
-        auto afterProtocol = std::string_view(url).substr(protocol.size() + 3);
+        auto afterProtocol = url.substr(protocol.size() + 3);
         if (!noEscape) afterProtocol = escape(afterProtocol);
         if (queries.empty()) return fmt::format("{}://{}", protocol, afterProtocol);
 
