@@ -15,7 +15,7 @@ namespace WebUtils {
         URLOptions(std::string_view url, QueryMap queries, HeaderMap headers, bool useSSL = false, std::string_view encoding = "", std::optional<std::string> userAgent = std::nullopt, std::optional<int> timeOut = std::nullopt) : url(url), queries(queries), headers(headers), useSSL(useSSL), encoding(encoding), userAgent(userAgent), timeOut(timeOut) {}
         URLOptions(std::string_view url, QueryMap queries, bool useSSL = false, std::string_view encoding = "", std::optional<std::string> userAgent = std::nullopt, std::optional<int> timeOut = std::nullopt) : url(url), queries(queries), headers({}), useSSL(useSSL), encoding(encoding), userAgent(userAgent), timeOut(timeOut) {}
         URLOptions(std::string_view url, bool useSSL, std::string_view encoding = "", std::optional<std::string> userAgent = std::nullopt, std::optional<int> timeOut = std::nullopt) : url(url), queries({}), headers({}), useSSL(useSSL), encoding(encoding), userAgent(userAgent), timeOut(timeOut) {}
-        URLOptions(std::string_view url, std::optional<std::string> userAgent = std::nullopt, std::optional<int> timeOut = std::nullopt) : url(url), queries({}), headers({}), userAgent(userAgent), timeOut(timeOut) {}
+        URLOptions(std::string_view url, std::optional<std::string> userAgent = std::nullopt, std::optional<int> timeOut = std::nullopt) : url(url), queries({}), headers({}), useSSL(false), userAgent(userAgent), timeOut(timeOut), encoding("") {}
 
         /// @brief base url to request from
         std::string url;
