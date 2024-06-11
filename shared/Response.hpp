@@ -128,10 +128,11 @@ namespace WebUtils {
     /// @brief string response, simply reading the data as a texture
     struct WEBUTILS_EXPORT TextureResponse : public GenericResponse<UnityW<UnityEngine::Texture2D>> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
-            ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
-            std::copy(data.begin(), data.end(), imageData.begin());
             bool mainThreadRan = false;
             BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
+                ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
+                std::copy(data.begin(), data.end(), imageData.begin());
+
                 auto tex = BSML::Utilities::LoadTextureRaw(imageData);
                 if (tex) this->responseData = tex;
                 mainThreadRan = true;
@@ -144,10 +145,11 @@ namespace WebUtils {
     /// @brief string response, simply reading the data as a texture into a sprite
     struct WEBUTILS_EXPORT SpriteResponse : public GenericResponse<UnityW<UnityEngine::Sprite>> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
-            ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
-            std::copy(data.begin(), data.end(), imageData.begin());
             bool mainThreadRan = false;
             BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
+                ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
+                std::copy(data.begin(), data.end(), imageData.begin());
+
                 auto tex = BSML::Utilities::LoadTextureRaw(imageData);
                 if (tex) {
                     auto sprite = BSML::Utilities::LoadSpriteFromTexture(tex);
