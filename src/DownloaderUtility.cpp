@@ -129,7 +129,7 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_str_cb);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, &recvHeaders);
 
-        std::string userAgent = urlOptions.userAgent.value_or(userAgent);
+        std::string userAgent = urlOptions.userAgent.value_or(this->userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL ? 1 : 0);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL ? 2 : 0);
@@ -219,7 +219,7 @@ namespace WebUtils {
         curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_str_cb);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, &recvHeaders);
 
-        std::string userAgent = urlOptions.userAgent.value_or(userAgent);
+        std::string userAgent = urlOptions.userAgent.value_or(this->userAgent);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, urlOptions.useSSL ? 1 : 0);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, urlOptions.useSSL ? 2 : 0);
