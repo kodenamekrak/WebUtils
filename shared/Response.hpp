@@ -129,7 +129,7 @@ namespace WebUtils {
     struct WEBUTILS_EXPORT TextureResponse : public GenericResponse<UnityW<UnityEngine::Texture2D>> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
             bool mainThreadRan = false;
-            BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
+            BSML::MainThreadScheduler::Schedule([&mainThreadRan, this](){
                 ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
                 std::copy(data.begin(), data.end(), imageData.begin());
 
@@ -146,7 +146,7 @@ namespace WebUtils {
     struct WEBUTILS_EXPORT SpriteResponse : public GenericResponse<UnityW<UnityEngine::Sprite>> {
         virtual bool AcceptData(std::span<uint8_t const> data) override {
             bool mainThreadRan = false;
-            BSML::MainThreadScheduler::Schedule([imageData, &mainThreadRan, this](){
+            BSML::MainThreadScheduler::Schedule([&mainThreadRan, this](){
                 ArrayW<uint8_t> imageData(il2cpp_array_size_t(data.size()));
                 std::copy(data.begin(), data.end(), imageData.begin());
 
