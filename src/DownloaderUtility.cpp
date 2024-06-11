@@ -8,13 +8,6 @@
 #include <fstream>
 
 namespace WebUtils {
-    std::string URLOptions::fullURl() const {
-        if (queries.empty()) return url;
-        std::vector<std::string> formattedQueries;
-        for (auto& [key, value] : queries) formattedQueries.emplace_back(fmt::format("{}={}", key, value));
-        return fmt::format("{}?{}", url, fmt::join(formattedQueries, "&"));
-    }
-
     std::pair<char, char> getByteChars(char c) {
         static char nibbleToChar[] = "0123456789abcdef";
         auto lower = c & 0b1111;
@@ -44,7 +37,29 @@ namespace WebUtils {
         }
 
         return escaped;
-}
+    }
+
+    std::string URLOptions::fullURl() const {
+        auto protocol = this->protocol();
+        auto afterProtocol = std::string_view(url).substr(protocol.size() + 3);
+        if (!noEscape) afterProtocol = escape(afterProtocol);
+        if (queries.empty()) return fmt::format("{}://{}", protocol, afterProtocol);
+
+        std::vector<std::string> formattedQueries;
+        if (noEscape) {
+            for (auto& [key, value] : queries) formattedQueries.emplace_back(fmt::format("{}={}", key, value));
+        } else {
+            for (auto& [key, value] : queries) formattedQueries.emplace_back(fmt::format("{}={}", escape(key), escape(value)));
+        }
+
+        return fmt::format("{}://{}?{}", protocol, afterProtocol, fmt::join(formattedQueries, "&"));
+    }
+
+    std::string_view URLOptions::protocol() const {
+        auto divider = url.find("://");
+        if (divider == std::string::npos) return {};
+        return {url.c_str(), divider};
+    }
 
     static std::size_t write_vec_cb(uint8_t* content, std::size_t size, std::size_t nmemb, std::vector<uint8_t>* vec) {
         std::span<uint8_t> addedData(content, (size * nmemb));
@@ -84,13 +99,7 @@ namespace WebUtils {
             curl_headers = curl_slist_append(curl_headers, fmt::format("{}: {}", key, value).c_str());
         }
 
-        auto url = urlOptions.fullURl();
-        auto view = std::string_view(url);
-        auto urlProtocol = view.substr(0, view.find("://"));
-        auto escapedUrl = fmt::format("{}://{}", urlProtocol, escape(std::string_view(url).substr(urlProtocol.size() + 3)));
-
-        VERBOSE("GET Request URL: {}", url);
-        VERBOSE("GET Escaped URL: {}", escapedUrl);
+        auto escapedUrl = urlOptions.fullURl();
 
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
         curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
@@ -177,13 +186,7 @@ namespace WebUtils {
             curl_headers = curl_slist_append(curl_headers, fmt::format("{}: {}", key, value).c_str());
         }
 
-        auto url = urlOptions.fullURl();
-        auto view = std::string_view(url);
-        auto urlProtocol = view.substr(0, view.find("://"));
-        auto escapedUrl = fmt::format("{}://{}", urlProtocol, escape(std::string_view(url).substr(urlProtocol.size() + 3)));
-
-        VERBOSE("POST Request URL: {}", url);
-        VERBOSE("POST Escaped URL: {}", escapedUrl);
+        auto escapedUrl = urlOptions.fullURl();
 
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
         curl_easy_setopt(curl, CURLOPT_URL, escapedUrl.c_str());
