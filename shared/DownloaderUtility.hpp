@@ -115,7 +115,7 @@ namespace WebUtils {
             /// @param progressReport progress callback as a float from 0 - 1, allowed to be null
             template<response_impl T>
             requires(std::is_default_constructible_v<T>)
-            void PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished, std::function<void(float)> progressReport = nullptr) {
+            void PostAsync(URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished, std::function<void(float)> progressReport = nullptr) const {
                 if (!onFinished) return;
 
                 std::thread([this](URLOptions urlOptions, std::span<uint8_t const> data, std::function<void(T)> onFinished, std::function<void(float)> progressReport){
